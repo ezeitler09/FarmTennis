@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Farm Tennis Ladder</title>
+<meta name="description" content="Standings, schedule and score reporting for the Farm Tennis men's singles ladder.">
+<meta name="theme-color" content="#22568B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23CFE22A' stroke='%231D2806' stroke-width='1.5'/%3E%3Cpath d='M6 7c6 4 6 14 0 18M26 7c-6 4-6 14 0 18' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="court">
+    <div class="court-inner">
+      <div>
+        <p class="eyebrow">Farm Tennis · Men's singles</p>
+        <h1 id="seasonName">Singles Ladder</h1>
+        <p class="weekline" id="weekLine">&nbsp;</p>
+      </div>
+      <div class="me-box">
+        <div class="me-field" id="pickerField">
+          <label for="me">Viewing as</label>
+          <select id="me"><option value="">Choose your name…</option></select>
+        </div>
+        <div class="me-field" id="whoField" hidden>
+          <span class="lbl">Signed in</span>
+          <span class="who"><span id="whoName"></span> · <button type="button" class="link" id="signOut">Sign out</button></span>
+        </div>
+        <button class="btn outline" id="signInBtn" type="button">Sign in</button>
+        <button class="btn ball" id="reportBtn" type="button">Report a score</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="summary" id="summary" hidden></div>
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="mine" id="mine" hidden aria-labelledby="mineTitle"></section>
+
+  <nav class="tabs" role="tablist" aria-label="Ladder sections">
+    <button class="tab" role="tab" id="t-standings" data-tab="standings" aria-selected="true" aria-controls="p-standings">Standings</button>
+    <button class="tab" role="tab" id="t-schedule" data-tab="schedule" aria-selected="false" aria-controls="p-schedule">Schedule</button>
+    <button class="tab" role="tab" id="t-players" data-tab="players" aria-selected="false" aria-controls="p-players">Players</button>
+    <button class="tab" role="tab" id="t-rules" data-tab="rules" aria-selected="false" aria-controls="p-rules">Rules</button>
+  </nav>
+
+  <section class="panel" id="p-standings" role="tabpanel" aria-labelledby="t-standings"><div class="loading">Loading the ladder…</div></section>
+  <section class="panel" id="p-schedule" role="tabpanel" aria-labelledby="t-schedule" hidden></section>
+  <section class="panel" id="p-players" role="tabpanel" aria-labelledby="t-players" hidden>
+    <div class="toolbar">
+      <input class="search" id="pSearch" type="search" placeholder="Search players" aria-label="Search players">
+      <button class="btn ghost" type="button" id="copyAll" hidden>Copy all emails</button>
+    </div>
+    <div id="pTable"></div>
+  </section>
+  <section class="panel" id="p-rules" role="tabpanel" aria-labelledby="t-rules" hidden></section>
+</div>
+
+<!-- Sign in -->
+<div class="modal" id="authModal" hidden role="dialog" aria-modal="true" aria-labelledby="aTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="aTitle">Sign in</h2>
+      <button class="x" type="button" data-close="authModal" aria-label="Close">×</button>
+    </div>
+    <form id="authForm" class="fld" novalidate>
+      <p id="aReason" class="muted">Sign in with the email address the league has on file. We'll email you a link. No password needed.</p>
+      <label for="aEmail">Email</label>
+      <input id="aEmail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+      <p class="err" id="aError" hidden></p>
+      <div class="sheet-foot">
+        <span class="spacer"></span>
+        <button class="btn ghost" type="button" data-close="authModal">Cancel</button>
+        <button class="btn primary" type="submit" id="aSend">Email me a link</button>
+      </div>
+    </form>
+    <div id="authSent" hidden>
+      <p class="ok">Check <b id="aSentTo"></b> for an email with a sign-in link. Open the link on the phone or computer where you want to report scores. It may take a minute to arrive, so check spam too.</p>
+      <div class="sheet-foot"><span class="spacer"></span><button class="btn primary" type="button" data-close="authModal">Done</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Report a score -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="mTitle">Report a score</h2>
+      <button class="x" type="button" data-close="modal" aria-label="Close">×</button>
+    </div>
+    <div class="fld">
+      <label for="rMatch">Match</label>
+      <select id="rMatch"></select>
+    </div>
+    <div class="fld">
+      <span id="rTypeLbl">Result</span>
+      <div class="seg" id="rType" role="group" aria-labelledby="rTypeLbl">
+        <button type="button" data-type="completed" aria-pressed="true">Played out</button>
+        <button type="button" data-type="retired" aria-pressed="false">Retired</button>
+        <button type="button" data-type="default" aria-pressed="false">Default / walkover</button>
+      </div>
+    </div>
+    <div id="rBoardWrap" class="fld">
+      <span>Games per set</span>
+      <div class="entry" id="rBoard">
+        <span></span><span class="ch">Set 1</span><span class="ch">Set 2</span><span class="ch" id="c3Label">Tiebreak</span>
+        <span class="rn" id="eHome">Home</span>
+        <input id="s1h" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 1, home games">
+        <input id="s2h" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 2, home games">
+        <input id="s3h" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 3 or tiebreak, home">
+        <span class="rn" id="eAway">Away</span>
+        <input id="s1a" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 1, away games">
+        <input id="s2a" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 2, away games">
+        <input id="s3a" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 3 or tiebreak, away">
+        <span class="tbl" id="tbLbl">Tiebreak points (loser)</span>
+        <input id="s1t" class="tb" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 1 tiebreak, loser's points">
+        <input id="s2t" class="tb" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 2 tiebreak, loser's points">
+        <input id="s3t" class="tb" type="number" inputmode="numeric" min="0" max="40" aria-label="Set 3 tiebreak, loser's points">
+      </div>
+      <label class="chk"><input type="checkbox" id="rFullThird"> Third set was played as a full set</label>
+    </div>
+    <div class="fld" id="rWinnerWrap" hidden>
+      <span id="rWinLbl">Winner</span>
+      <div class="seg" id="rWinner" role="group" aria-labelledby="rWinLbl"></div>
+    </div>
+    <p class="preview empty" id="rPreview" aria-live="polite">Enter the games won in each set.</p>
+    <p class="err" id="rError" hidden></p>
+    <div class="sheet-foot">
+      <button class="btn ghost danger" type="button" id="rClear" hidden>Clear result</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" type="button" data-close="modal">Cancel</button>
+      <button class="btn primary" type="button" id="rSave">Save score</button>
+    </div>
+    <p class="fineprint">Either player can report or correct the score. Every change is logged.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
