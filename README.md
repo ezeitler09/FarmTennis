@@ -56,3 +56,7 @@ Update the playoffs line:
 ```sql
 update public.season set playoffs = 'Top 8, starting Oct 24' where id = 1;
 ```
+
+## Deploying
+
+The Vercel project `farmtennis` is connected to this repo. Every push to `main` deploys to https://farmtennis.vercel.app within about a minute. There's no build step; Vercel serves the files as they are.
